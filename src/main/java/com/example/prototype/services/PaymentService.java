@@ -14,7 +14,7 @@ import java.util.Map;
 @Service
 public class PaymentService {
 
-    private String md5Hex(String input) throws NoSuchAlgorithmException {
+    public String md5Hex(String input) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("MD5");
         byte[] digest = md.digest(input.getBytes());
         StringBuilder sb = new StringBuilder();
