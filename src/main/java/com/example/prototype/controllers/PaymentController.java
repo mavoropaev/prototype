@@ -13,11 +13,12 @@ import java.security.NoSuchAlgorithmException;
 @RequiredArgsConstructor
 public class PaymentController {
 
-    PaymentGate paymentGate;
+    PaymentGate paymentGate = new PaymentGate();
 
     @GetMapping
     public String requestPayment() throws NoSuchAlgorithmException {
         return paymentGate.payment();
+        //return "Test - worked";
     }
 
 

@@ -25,10 +25,27 @@ public class PaymentService {
     }
 
     public String createInvoice(String eshopId, int orderId, String recipientAmount, String recipientCurrency, String email, String secretKey) throws NoSuchAlgorithmException {
-        String hash = md5Hex(eshopId + "::" + orderId + "::" + "" /* serviceName */ + "::"
-                                 + recipientAmount + "::" + recipientCurrency + "::" + "" /* userName */ + "::"
-                                 + email + "::" + "" /* successUrl */ + "::" + "" /* failUrl */ + "::" + "" /* backUrl */ + "::"
-                                 + "" /* resultUrl */ + "::" + "" /* expireDate */ + "::" + "" /* holdMode */ + "::" + "" /* preference */ + "::" + secretKey);
+        //eshopId::
+        //orderId::
+        //serviceName::
+        //recipientAmount::
+        //recipientCurrency::
+        //userName::
+        //email::
+        //successUrl::
+        //failUrl::
+        //backUrl::
+        //resultUrl::
+        //expireDate::
+        //holdMode::
+        //preference::
+        //signSecretKey
+        String param5Hex = eshopId + "::" + orderId + "::" + "" + "::"
+                + recipientAmount + "::" + recipientCurrency + "::" + "" + "::"
+                + email + "::" + ""  + "::" + "" + "::" + "" + "::"
+                + "" + "::" + "" + "::" + "" + "::" + ""  + "::" + secretKey;
+
+        String hash = md5Hex(param5Hex);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "application/x-www-form-urlencoded");
@@ -44,9 +61,11 @@ public class PaymentService {
         params.put("hash", hash);
 
         RestTemplate restTemplate = new RestTemplate();
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(params, headers);
+        //HttpEntity<Map<String, String>> request = new HttpEntity<>(params, headers);
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(params);
 
         return restTemplate.postForObject(url, request, String.class);
+        //return restTemplate.postForEntity(url, request, String.class).getBody();
     }
 
 
