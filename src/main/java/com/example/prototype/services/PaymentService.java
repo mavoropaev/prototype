@@ -65,7 +65,6 @@ public class PaymentService {
         HttpEntity<Map<String, String>> request = new HttpEntity<>(params);
 
         return restTemplate.postForObject(url, request, String.class);
-        //return restTemplate.postForEntity(url, request, String.class).getBody();
     }
 
 

@@ -14,7 +14,6 @@ public class PaymentGate {
         String recipientAmount = "10.00";
         String recipientCurrency = "RUB";
         String email = "test@test.ru";
-        //String secretKey = "d0fa8c45807d44548156541c1f3954da";
         String secretKey = "tmpKey";
 
 
