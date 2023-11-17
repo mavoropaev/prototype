@@ -15,9 +15,15 @@ public class PaymentController {
 
     PaymentGate paymentGate = new PaymentGate();
 
-    @GetMapping
-    public String requestPayment() throws NoSuchAlgorithmException {
-        return paymentGate.payment();
+    @GetMapping("1")
+    public String requestCreateInvoice() throws NoSuchAlgorithmException {
+        return paymentGate.createInvoice();
+        //return "Test - worked";
+    }
+
+    @GetMapping("2")
+    public String requestBankCardPayment() throws NoSuchAlgorithmException {
+        return paymentGate.bankCardPayment();
         //return "Test - worked";
     }
 
