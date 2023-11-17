@@ -14,7 +14,7 @@ import java.util.Map;
 @Service
 public class PaymentService {
 
-    private String md5Hex(String input) throws NoSuchAlgorithmException {
+    public String md5Hex(String input) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("MD5");
         byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
         StringBuilder sb = new StringBuilder();
@@ -25,13 +25,30 @@ public class PaymentService {
     }
 
     public String createInvoice(String eshopId, int orderId, String recipientAmount, String recipientCurrency, String email, String secretKey) throws NoSuchAlgorithmException {
-        String hash = md5Hex(eshopId + "::" + orderId + "::" + "" /* serviceName */ + "::"
-                                 + recipientAmount + "::" + recipientCurrency + "::" + "" /* userName */ + "::"
-                                 + email + "::" + "" /* successUrl */ + "::" + "" /* failUrl */ + "::" + "" /* backUrl */ + "::"
-                                 + "" /* resultUrl */ + "::" + "" /* expireDate */ + "::" + "" /* holdMode */ + "::" + "" /* preference */ + "::" + secretKey);
+        //eshopId::
+        //orderId::
+        //serviceName::
+        //recipientAmount::
+        //recipientCurrency::
+        //userName::
+        //email::
+        //successUrl::
+        //failUrl::
+        //backUrl::
+        //resultUrl::
+        //expireDate::
+        //holdMode::
+        //preference::
+        //signSecretKey
+        String param5Hex = eshopId + "::" + orderId + "::" + "" + "::"
+                + recipientAmount + "::" + recipientCurrency + "::" + "" + "::"
+                + email + "::" + ""  + "::" + "" + "::" + "" + "::"
+                + "" + "::" + "" + "::" + "" + "::" + ""  + "::" + secretKey;
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", "application/x-www-form-urlencoded");
+        String hash = md5Hex(param5Hex);
+
+        //HttpHeaders headers = new HttpHeaders();
+        //headers.set("Content-Type", "application/x-www-form-urlencoded");
 
         String url = "https://api.intellectmoney.ru/merchant/latest/createInvoice";
 
@@ -44,7 +61,8 @@ public class PaymentService {
         params.put("hash", hash);
 
         RestTemplate restTemplate = new RestTemplate();
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(params, headers);
+        //HttpEntity<Map<String, String>> request = new HttpEntity<>(params, headers);
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(params);
 
         return restTemplate.postForObject(url, request, String.class);
     }
@@ -52,11 +70,12 @@ public class PaymentService {
 
     public String bankCardPayment(String eshopId, String invoiceId, String pan, String cardHolder, String expiredMonth, String expiredYear, String cvv,
                                   String returnUrl, String ipAddress, String secretKey) throws NoSuchAlgorithmException {
+
         String hash = md5Hex(eshopId + "::" + invoiceId + "::" + pan + "::" + cardHolder + "::" + expiredMonth + "::" + expiredYear + "::" +
                                    cvv + "::" + returnUrl + "::" + ipAddress + "::" + secretKey);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", "application/x-www-form-urlencoded");
+        //HttpHeaders headers = new HttpHeaders();
+        //headers.set("Content-Type", "application/x-www-form-urlencoded");
 
         String url = "https://api.intellectmoney.ru/merchant/bankcardpayment";
 
@@ -73,7 +92,7 @@ public class PaymentService {
         params.put("hash", hash);
 
         RestTemplate restTemplate = new RestTemplate();
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(params, headers);
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(params);
 
         return restTemplate.postForObject(url, request, String.class);
     }
