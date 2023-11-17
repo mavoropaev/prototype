@@ -1,6 +1,7 @@
 package com.example.prototype.services;
 
 
+import org.json.JSONObject;
 import java.security.NoSuchAlgorithmException;
 
 public class PaymentGate {
@@ -16,7 +17,11 @@ public class PaymentGate {
         String email = "test@test.ru";
         String secretKey = "tmpKey";
 
-        return paymentService.createInvoice(eshopId, orderId, recipientAmount, recipientCurrency, email, secretKey);
+        String invoiceTxt = paymentService.createInvoice(eshopId, orderId, recipientAmount, recipientCurrency, email, secretKey);
+        String invoiceId = jsonRead(invoiceTxt);
+        return "InvoiceId::" + invoiceId;
+
+        //return paymentService.createInvoice(eshopId, orderId, recipientAmount, recipientCurrency, email, secretKey);
     }
 
     public String bankCardPayment() throws NoSuchAlgorithmException {
@@ -34,6 +39,14 @@ public class PaymentGate {
 
         return paymentService.bankCardPayment(eshopId, invoiceId, pan, cardHolder, expiredMonth, expiredYear, cvv,
                 returnUrl, ipAddress, secretKey);
+    }
+    private  String jsonRead(String jsonStr){
+
+        JSONObject jsonObject = new JSONObject(jsonStr.toString());
+        JSONObject resultJson = jsonObject.getJSONObject("Result");
+
+        return  resultJson.get("InvoiceId").toString();
+
     }
 
 
