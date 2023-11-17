@@ -4,6 +4,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -16,7 +18,8 @@ public class PaymentService {
 
     private String md5Hex(String input) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] digest = md.digest(input.getBytes());
+        //byte[] digest = md.digest(input.getBytes());
+        byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
         StringBuilder sb = new StringBuilder();
         for (byte b : digest) {
             sb.append(String.format("%02x", b));
@@ -25,21 +28,10 @@ public class PaymentService {
     }
 
     public String createInvoice(String eshopId, int orderId, String recipientAmount, String recipientCurrency, String email, String secretKey) throws NoSuchAlgorithmException {
-        //eshopId::
-        //orderId::
-        //serviceName::
-        //recipientAmount::
-        //recipientCurrency::
-        //userName::
-        //email::
-        //successUrl::
-        //failUrl::
-        //backUrl::
-        //resultUrl::
-        //expireDate::
-        //holdMode::
-        //preference::
-        //signSecretKey
+        //eshopId::orderId::serviceName::recipientAmount::recipientCurrency::
+        //userName::email::successUrl::failUrl::backUrl::resultUrl::expireDate::
+        //holdMode::preference::signSecretKey
+
         String param5Hex = eshopId + "::" + orderId + "::" + "" + "::"
                 + recipientAmount + "::" + recipientCurrency + "::" + "" + "::"
                 + email + "::" + ""  + "::" + "" + "::" + "" + "::"
@@ -47,8 +39,8 @@ public class PaymentService {
 
         String hash = md5Hex(param5Hex);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", "application/x-www-form-urlencoded");
+       // HttpHeaders headers = new HttpHeaders();
+        //headers.set("Content-Type", "application/x-www-form-urlencoded");
 
         String url = "https://api.intellectmoney.ru/merchant/latest/createInvoice";
 
