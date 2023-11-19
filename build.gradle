@@ -29,6 +29,16 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'org.json:json:20211205'
+	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+	testImplementation 'org.mockito:mockito-core:3.6.28'
+	testImplementation 'org.mockito:mockito-junit-jupiter:3.6.28'
+}
+
+// Настройка использования JUnit 5
+test {
+	useJUnitPlatform()
 }
 
 tasks.named('bootBuildImage') {

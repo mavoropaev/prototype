@@ -1,20 +1,33 @@
 package com.example.prototype.services;
 
+import com.example.prototype.config.InvoiceProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
-//import javax.xml.parsers;
-//import org.xml.sax;
+import java.util.Random;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class PaymentService {
 
-    public String md5Hex(String input) throws NoSuchAlgorithmException {
+    public static final int MAX_ORDER_NUM = 1000000;
+
+    private final InvoiceProperties invoiceProperties;
+    private final ObjectMapper objectMapper;
+    private final RestTemplate restTemplate;
+
+    @SneakyThrows
+    public String md5Hex(String input) {
         MessageDigest md = MessageDigest.getInstance("MD5");
         byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
         StringBuilder sb = new StringBuilder();
@@ -24,76 +37,60 @@ public class PaymentService {
         return sb.toString();
     }
 
-    public String createInvoice(String eshopId, int orderId, String recipientAmount, String recipientCurrency, String email, String secretKey) throws NoSuchAlgorithmException {
-        //eshopId::
-        //orderId::
-        //serviceName::
-        //recipientAmount::
-        //recipientCurrency::
-        //userName::
-        //email::
-        //successUrl::
-        //failUrl::
-        //backUrl::
-        //resultUrl::
-        //expireDate::
-        //holdMode::
-        //preference::
-        //signSecretKey
-        String param5Hex = eshopId + "::" + orderId + "::" + "" + "::"
-                + recipientAmount + "::" + recipientCurrency + "::" + "" + "::"
-                + email + "::" + ""  + "::" + "" + "::" + "" + "::"
-                + "" + "::" + "" + "::" + "" + "::" + ""  + "::" + secretKey;
+    public String createInvoice(String recipientAmount, String email) {
+        log.info("Создание счета на оплату для суммы {} и email {}", recipientAmount, email);
+
+        String orderId = String.valueOf(new Random().nextInt(MAX_ORDER_NUM));
+
+        String param5Hex = String.join("::", invoiceProperties.getEshopId(), orderId, "", recipientAmount,
+                invoiceProperties.getRecipientCurrency(), "", email, "", "", "", "", "", "", "", invoiceProperties.getSecretKey());
+
+        log.info("Хэш-сумма запроса {}", param5Hex);
 
         String hash = md5Hex(param5Hex);
 
-        //HttpHeaders headers = new HttpHeaders();
-        //headers.set("Content-Type", "application/x-www-form-urlencoded");
-
-        String url = "https://api.intellectmoney.ru/merchant/latest/createInvoice";
-
         Map<String, String> params = new HashMap<>();
-        params.put("eshopId", eshopId);
-        params.put("orderId", String.valueOf(orderId));
+        params.put("eshopId", invoiceProperties.getEshopId());
+        params.put("orderId", orderId);
         params.put("recipientAmount", recipientAmount);
-        params.put("recipientCurrency", recipientCurrency);
+        params.put("recipientCurrency", invoiceProperties.getRecipientCurrency());
         params.put("email", email);
         params.put("hash", hash);
 
-        RestTemplate restTemplate = new RestTemplate();
-        //HttpEntity<Map<String, String>> request = new HttpEntity<>(params, headers);
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(params);
+        log.info("Отправка запроса на создание счета с параметрами: {}", params);
 
-        return restTemplate.postForObject(url, request, String.class);
+        try {
+            HttpEntity<Map<String, String>> request = new HttpEntity<>(params);
+            String response = restTemplate.postForObject(invoiceProperties.getInvoiceUrl(), request, String.class);
+            String invoiceId = extractInvoiceIdFromJson(response);
+
+            log.info("Счет на оплату успешно создан с ID: {}", invoiceId);
+            return buildPaymentUrl(invoiceId);
+        } catch (Exception e) {
+            log.error("Ошибка при создании счета на оплату", e);
+            throw e;
+        }
     }
 
 
-    public String bankCardPayment(String eshopId, String invoiceId, String pan, String cardHolder, String expiredMonth, String expiredYear, String cvv,
-                                  String returnUrl, String ipAddress, String secretKey) throws NoSuchAlgorithmException {
+    public String buildPaymentUrl(String invoiceId) {
+        Map<String, String> response = new HashMap<>();
+        response.put("paymentUrl", String.format(invoiceProperties.getPaymentUrlTemplate(), invoiceId));
+        try {
+            return objectMapper.writeValueAsString(response);
+        } catch (Exception e) {
+            log.error("Ошибка при создании JSON строки: ", e);
+            return null;
+        }
+    }
 
-        String hash = md5Hex(eshopId + "::" + invoiceId + "::" + pan + "::" + cardHolder + "::" + expiredMonth + "::" + expiredYear + "::" +
-                                   cvv + "::" + returnUrl + "::" + ipAddress + "::" + secretKey);
-
-        //HttpHeaders headers = new HttpHeaders();
-        //headers.set("Content-Type", "application/x-www-form-urlencoded");
-
-        String url = "https://api.intellectmoney.ru/merchant/bankcardpayment";
-
-        Map<String, String> params = new HashMap<>();
-        params.put("eshopId", eshopId);
-        params.put("invoiceId", invoiceId);
-        params.put("pan", pan);
-        params.put("cardHolder", cardHolder);
-        params.put("expiredMonth", expiredMonth);
-        params.put("expiredYear", expiredYear);
-        params.put("cvv", cvv);
-        params.put("returnUrl", returnUrl);
-        params.put("ipAddress", ipAddress);
-        params.put("hash", hash);
-
-        RestTemplate restTemplate = new RestTemplate();
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(params);
-
-        return restTemplate.postForObject(url, request, String.class);
+    private String extractInvoiceIdFromJson(String jsonStr) {
+        try {
+            Map<String, Object> result = objectMapper.readValue(jsonStr, Map.class);
+            Map<String, Object> resultData = (Map<String, Object>) result.get("Result");
+            return resultData.get("InvoiceId").toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Error parsing JSON", e);
+        }
     }
 }
