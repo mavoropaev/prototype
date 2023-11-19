@@ -1,30 +1,31 @@
 package com.example.prototype.controllers;
 
-import com.example.prototype.services.PaymentGate;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.example.prototype.dto.InvoiceBody;
+import com.example.prototype.services.PaymentService;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.NoSuchAlgorithmException;
 
-@RestController
-@RequestMapping("/api/")
-@RequiredArgsConstructor
+
+@Controller
 public class PaymentController {
 
-    PaymentGate paymentGate = new PaymentGate();
-
-    @GetMapping("1")
-    public String requestCreateInvoice() throws NoSuchAlgorithmException {
-        return paymentGate.createInvoice();
-        //return "Test - worked";
+    @GetMapping("/")
+    public String indexStart() {
+        return "index";
     }
 
-    @GetMapping("2")
-    public String requestBankCardPayment() throws NoSuchAlgorithmException {
-        return paymentGate.bankCardPayment();
-        //return "Test - worked";
+    PaymentService paymentService = new PaymentService();
+
+    @PostMapping("/api/createInvoice")
+    @ResponseBody
+    public String requestCreateInvoice(@RequestBody InvoiceBody invoiceBody) throws NoSuchAlgorithmException {
+
+        double recipientAmount = Double.parseDouble(invoiceBody.getPrice()) * Double.parseDouble(invoiceBody.getQuantity());
+
+        return paymentService.createInvoice(Double.toString(recipientAmount), invoiceBody.getEmail());
+
     }
 
 

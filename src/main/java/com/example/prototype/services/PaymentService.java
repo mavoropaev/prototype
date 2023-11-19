@@ -1,7 +1,15 @@
 package com.example.prototype.services;
 
+import com.example.prototype.component.Invoice;
+
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -10,11 +18,25 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 //import javax.xml.parsers;
 //import org.xml.sax;
 
 @Service
+@ConfigurationProperties(prefix = "invoice")
 public class PaymentService {
+
+    @Autowired
+    private Environment env;
+    //@Value("${invoice.eshopId}")
+    private String eshopId;
+    //@Value("${invoice.orderId}")
+    private String orderId;
+    //@Value("${invoice.recipientCurrency}")
+    private String recipientCurrency;
+    //@Value("${invoice.secretKey}")
+    private String secretKey;
+
 
     public String md5Hex(String input) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("MD5");
@@ -27,28 +49,39 @@ public class PaymentService {
         return sb.toString();
     }
 
-    public String createInvoice(String eshopId, int orderId, String recipientAmount, String recipientCurrency, String email, String secretKey) throws NoSuchAlgorithmException {
-        //eshopId::orderId::serviceName::recipientAmount::recipientCurrency::
-        //userName::email::successUrl::failUrl::backUrl::resultUrl::expireDate::
-        //holdMode::preference::signSecretKey
+    public String createInvoice(String recipientAmount, String email) throws NoSuchAlgorithmException {
+
+        eshopId = "466418";
+        orderId = "7";
+        recipientCurrency = "RUB";
+        secretKey = "tmpKey";
 
         String param5Hex = eshopId + "::" + orderId + "::" + "" + "::"
                 + recipientAmount + "::" + recipientCurrency + "::" + "" + "::"
                 + email + "::" + ""  + "::" + "" + "::" + "" + "::"
                 + "" + "::" + "" + "::" + "" + "::" + ""  + "::" + secretKey;
 
-        String hash = md5Hex(param5Hex);
 
-       // HttpHeaders headers = new HttpHeaders();
-        //headers.set("Content-Type", "application/x-www-form-urlencoded");
+        /*
+        String param5Hex = invoice.getEshopId() + "::" + invoice.getOrderId() + "::" + "" + "::"
+                + recipientAmount + "::" + invoice.getRecipientCurrency() + "::" + "" + "::"
+                + email + "::" + ""  + "::" + "" + "::" + "" + "::"
+                + "" + "::" + "" + "::" + "" + "::" + ""  + "::" + invoice.getSecretKey();
+
+         */
+
+        String hash = md5Hex(param5Hex);
 
         String url = "https://api.intellectmoney.ru/merchant/latest/createInvoice";
 
         Map<String, String> params = new HashMap<>();
         params.put("eshopId", eshopId);
-        params.put("orderId", String.valueOf(orderId));
+        //params.put("eshopId", invoice.getEshopId());
+        params.put("orderId", orderId);
+        //params.put("orderId", String.valueOf(invoice.getOrderId()));
         params.put("recipientAmount", recipientAmount);
         params.put("recipientCurrency", recipientCurrency);
+        //params.put("recipientCurrency", invoice.getRecipientCurrency());
         params.put("email", email);
         params.put("hash", hash);
 
@@ -56,36 +89,27 @@ public class PaymentService {
         //HttpEntity<Map<String, String>> request = new HttpEntity<>(params, headers);
         HttpEntity<Map<String, String>> request = new HttpEntity<>(params);
 
-        return restTemplate.postForObject(url, request, String.class);
+        String invoiceIdStr =  jsonRead(Objects.requireNonNull(restTemplate.postForObject(url, request, String.class)));
+
+        String jsonUrlPayment = jsonCreate(invoiceIdStr);
+        return jsonUrlPayment;
     }
 
+    private  String jsonRead(String jsonStr){
 
-    public String bankCardPayment(String eshopId, String invoiceId, String pan, String cardHolder, String expiredMonth, String expiredYear, String cvv,
-                                  String returnUrl, String ipAddress, String secretKey) throws NoSuchAlgorithmException {
+        JSONObject jsonObject = new JSONObject(jsonStr.toString());
+        JSONObject resultJson = jsonObject.getJSONObject("Result");
 
-        String hash = md5Hex(eshopId + "::" + invoiceId + "::" + pan + "::" + cardHolder + "::" + expiredMonth + "::" + expiredYear + "::" +
-                                   cvv + "::" + returnUrl + "::" + ipAddress + "::" + secretKey);
-
-        //HttpHeaders headers = new HttpHeaders();
-        //headers.set("Content-Type", "application/x-www-form-urlencoded");
-
-        String url = "https://api.intellectmoney.ru/merchant/bankcardpayment";
-
-        Map<String, String> params = new HashMap<>();
-        params.put("eshopId", eshopId);
-        params.put("invoiceId", invoiceId);
-        params.put("pan", pan);
-        params.put("cardHolder", cardHolder);
-        params.put("expiredMonth", expiredMonth);
-        params.put("expiredYear", expiredYear);
-        params.put("cvv", cvv);
-        params.put("returnUrl", returnUrl);
-        params.put("ipAddress", ipAddress);
-        params.put("hash", hash);
-
-        RestTemplate restTemplate = new RestTemplate();
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(params);
-
-        return restTemplate.postForObject(url, request, String.class);
+        return  resultJson.get("InvoiceId").toString();
     }
+
+    private String jsonCreate(String invoice){
+
+        JSONObject jsonObject = new JSONObject();
+        String paymentUrl = "https://merchant.intellectmoney.ru/?InvoiceId=" + invoice;
+        jsonObject.put("paymentUrl", paymentUrl);
+
+        return jsonObject.toString();
+    }
+
 }
