@@ -38,11 +38,42 @@ public class PaymentController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> receivingPayment(PaymentNotificationBody paymentNotificationBody) {
         try {
-            log.info("Оповещения о платеже получено");
+            getNotificationStatus(paymentNotificationBody);
             return ResponseEntity.ok("ok");
         } catch (Exception e) {
-            log.error("Ошибка при создании счета: ", e);
+            log.error("Ошибка при получение уведомления: ", e);
             return ResponseEntity.status(500).body("Внутренняя ошибка сервера");
         }
     }
+
+    private static void getNotificationStatus(PaymentNotificationBody paymentNotificationBody) {
+        switch (paymentNotificationBody.getPaymentStatus()){
+            case "3":{
+                log.info("Создан счет к оплате (СКО) за покупку, paymentStatus: {}", paymentNotificationBody.getPaymentStatus());
+                break;
+            }
+            case "4":{
+                log.info("(СКО аннулирован, деньги возвращены пользователю, paymentStatus: {}", paymentNotificationBody.getPaymentStatus());
+                break;
+            }
+            case "5":{
+                log.info("СКО полностью оплачен, деньги переведены на счет интернет-магазина, paymentStatus: {}", paymentNotificationBody.getPaymentStatus());
+                break;
+            }
+            case "6":{
+                log.info("(Необходимая сумма заблокирована (холдирована) на СКО, ожидается запрос на списание или разблокировку средств или истечение срока блокировки, paymentStatus: {}", paymentNotificationBody.getPaymentStatus());
+                break;
+            }
+            case "8":{
+                log.info("По СКО был произведен возврат, paymentStatus: {}", paymentNotificationBody.getPaymentStatus());
+                log.info("Сумма возврата, refundAmount: {}", paymentNotificationBody.getRefundAmount());
+                log.info("Сумма, оставшаяся у интернет-магазина, recipientAmount: {}", paymentNotificationBody.getRecipientAmount());
+                break;
+            }
+            default:{
+                log.info("Неопределённый статус, paymentStatus: {}", paymentNotificationBody.getPaymentStatus());
+            }
+        }
+    }
+
 }
