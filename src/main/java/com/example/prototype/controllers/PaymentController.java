@@ -34,9 +34,9 @@ public class PaymentController {
         }
     }
 
-    @PostMapping("/api/receivingPayment")
+    @PostMapping("/api/getNotified")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<String> receivingPayment(PaymentNotificationBody paymentNotificationBody) {
+    public ResponseEntity<String> getNotified(PaymentNotificationBody paymentNotificationBody) {
         try {
             getNotificationStatus(paymentNotificationBody);
             return ResponseEntity.ok("ok");
